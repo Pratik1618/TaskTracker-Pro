@@ -294,6 +294,7 @@ export function DashboardLayout({
               onUpdateEntry={onUpdateWorkLogEntry}
               onDeleteEntry={handleDeleteEntry}
               onCalculateHours={calculateTotalHours}
+              userProfile={userProfile}
             />
           ) : null}
         </div>

@@ -66,6 +66,11 @@ export function UserProfileCard({ profile, onUpdateProfile }: UserProfileCardPro
                 <p className="text-slate-900">{profile.email}</p>
               </div>
               <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Manager</p>
+                <p className="text-slate-900">{profile.managerName || 'Not set'}</p>
+                <p className="text-xs text-slate-500">{profile.managerEmail || 'No manager email'}</p>
+              </div>
+              <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Department</p>
                 <p className="text-slate-900">{profile.department}</p>
               </div>
@@ -108,6 +113,29 @@ export function UserProfileCard({ profile, onUpdateProfile }: UserProfileCardPro
                 value={editData.jobTitle}
                 onChange={(event) => setEditData({ ...editData, jobTitle: event.target.value })}
                 placeholder="Enter job title"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Manager Name
+              </label>
+              <Input
+                value={editData.managerName}
+                onChange={(event) => setEditData({ ...editData, managerName: event.target.value })}
+                placeholder="Enter manager name"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Manager Email
+              </label>
+              <Input
+                type="email"
+                value={editData.managerEmail}
+                onChange={(event) => setEditData({ ...editData, managerEmail: event.target.value })}
+                placeholder="Enter manager email"
               />
             </div>
 

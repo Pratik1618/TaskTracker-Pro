@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { PencilLine, Plus, Trash2 } from 'lucide-react';
+import { PencilLine, Plus, Trash2, Mail } from 'lucide-react';
 
 import { formatDateValue } from '@/lib/date';
-import { Status, Task, WorkLogEntry, WorkLogEntryDraft, WorkLogFilter } from '@/lib/types';
+import { Status, Task, UserProfile, WorkLogEntry, WorkLogEntryDraft, WorkLogFilter } from '@/lib/types';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { WorkLogFormModal } from '@/components/WorkLogFormModal';
@@ -22,6 +22,7 @@ interface WorkLogScreenProps {
   onUpdateEntry: (id: string, updates: Partial<WorkLogEntryDraft>) => void;
   onDeleteEntry: (id: string) => void;
   onCalculateHours: (startTime: string, endTime: string, breakDuration: number) => number;
+  userProfile: UserProfile;
 }
 
 export function WorkLogScreen({
@@ -34,11 +35,47 @@ export function WorkLogScreen({
   onUpdateEntry,
   onDeleteEntry,
   onCalculateHours,
+  userProfile,
 }: WorkLogScreenProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WorkLogEntry | null>(null);
 
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks]);
+
+  const generateEmail = () => {
+    const recipient = userProfile.managerEmail?.trim();
+    const ccRecipient = ''; // Add your CC email address here, e.g. 'team-lead@example.com'
+    const subject = 'Work Log Report';
+    let body = '';
+    if (userProfile.managerName) {
+      body += `Hi ${userProfile.managerName},\n\n`;
+    }
+    body += 'Please find the latest work log below.\n\n';
+
+    entries.forEach((entry) => {
+      const task = tasks.find((t) => t.id === entry.taskId);
+      const hours = onCalculateHours(entry.startTime, entry.endTime, entry.breakDuration).toFixed(2);
+      const notes = [entry.progressNotes, entry.remarks].filter(Boolean).join(' | ');
+
+      body += `Date:   ${formatDateValue(entry.date)}\n`;
+      body += `Task:   ${task?.title ?? 'Archived task'}\n`;
+      body += `Time:   ${entry.startTime} - ${entry.endTime} (${hours}h)\n`;
+      body += `Status: ${entry.statusUpdate.replace('-', ' ')} (${entry.progressPercentage}%)\n`;
+      if (notes) {
+        body += `Notes:  ${notes}\n`;
+      }
+      body += `----------------------------------------\n\n`;
+    });
+
+    body += `Total Hours: ${totalHours.toFixed(2)}h\n\n`;
+    body += 'Regards,\n';
+    body += `${userProfile.fullName || 'Team Member'}\n`;
+
+    const toValue = recipient ? `mailto:${encodeURIComponent(recipient)}` : 'mailto:';
+    const ccValue = ccRecipient ? `&cc=${encodeURIComponent(ccRecipient)}` : '';
+    const mailto = `${toValue}?subject=${encodeURIComponent(subject)}${ccValue}&body=${encodeURIComponent(body)}`;
+    window.open(mailto);
+  };
 
   const statusOptions: Array<Status | 'all'> = [
     'all',
@@ -64,10 +101,28 @@ export function WorkLogScreen({
           </p>
         </div>
 
-        <Button className="gap-2 self-start xl:self-auto" disabled={activeTasks.length === 0} onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Add Entry
-        </Button>
+        <div className="flex flex-col gap-2 self-start xl:self-auto">
+          <div className="flex gap-2">
+            <Button className="gap-2" disabled={activeTasks.length === 0} onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add Entry
+            </Button>
+            <Button
+              className="gap-2"
+              variant="outline"
+              disabled={!userProfile.managerEmail?.trim()}
+              onClick={generateEmail}
+            >
+              <Mail className="h-4 w-4" />
+              Send to Outlook
+            </Button>
+          </div>
+          {!userProfile.managerEmail?.trim() ? (
+            <p className="text-xs text-slate-500">
+              Set a manager email in your profile so this button can auto-fill the recipient.
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <Card className="border-slate-200 bg-white text-slate-900 shadow-sm">
@@ -157,7 +212,7 @@ export function WorkLogScreen({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1120px]">
+              <table className="w-full min-w-280">
                 <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.18em] text-slate-500">
                   <tr>
                     <th className="px-6 py-4">Date</th>

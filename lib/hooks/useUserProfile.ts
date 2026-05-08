@@ -13,6 +13,8 @@ const DEFAULT_PROFILE: UserProfile = {
   jobTitle: 'Operations Associate',
   department: 'Operations',
   avatar: 'TM',
+  managerName: '',
+  managerEmail: '',
 };
 
 export function useUserProfile() {

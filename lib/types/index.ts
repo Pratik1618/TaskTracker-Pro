@@ -37,6 +37,8 @@ export interface UserProfile {
   jobTitle: string;
   department: string;
   avatar: string;
+  managerName: string;
+  managerEmail: string;
 }
 
 export interface Task {
