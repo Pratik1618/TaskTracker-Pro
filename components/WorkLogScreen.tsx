@@ -1,0 +1,260 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { PencilLine, Plus, Trash2 } from 'lucide-react';
+
+import { formatDateValue } from '@/lib/date';
+import { Status, Task, WorkLogEntry, WorkLogEntryDraft, WorkLogFilter } from '@/lib/types';
+import { ProgressBar } from '@/components/ProgressBar';
+import { StatusBadge } from '@/components/StatusBadge';
+import { WorkLogFormModal } from '@/components/WorkLogFormModal';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface WorkLogScreenProps {
+  entries: WorkLogEntry[];
+  tasks: Task[];
+  filters: WorkLogFilter;
+  totalHours: number;
+  onFilterChange: (filters: WorkLogFilter) => void;
+  onAddEntry: (draft: WorkLogEntryDraft) => void;
+  onUpdateEntry: (id: string, updates: Partial<WorkLogEntryDraft>) => void;
+  onDeleteEntry: (id: string) => void;
+  onCalculateHours: (startTime: string, endTime: string, breakDuration: number) => number;
+}
+
+export function WorkLogScreen({
+  entries,
+  tasks,
+  filters,
+  totalHours,
+  onFilterChange,
+  onAddEntry,
+  onUpdateEntry,
+  onDeleteEntry,
+  onCalculateHours,
+}: WorkLogScreenProps) {
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<WorkLogEntry | null>(null);
+
+  const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks]);
+
+  const statusOptions: Array<Status | 'all'> = [
+    'all',
+    'pending',
+    'in-progress',
+    'on-hold',
+    'completed',
+    'cancelled',
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
+            Work Log
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-slate-900">
+            Work log history
+          </h2>
+          <p className="max-w-2xl text-sm text-slate-600">
+            Filter history, update task progress from entries, and keep a realistic local audit trail.
+          </p>
+        </div>
+
+        <Button className="gap-2 self-start xl:self-auto" disabled={activeTasks.length === 0} onClick={() => setIsCreateOpen(true)}>
+          <Plus className="h-4 w-4" />
+          Add Entry
+        </Button>
+      </div>
+
+      <Card className="border-slate-200 bg-white text-slate-900 shadow-sm">
+        <CardHeader className="border-b border-slate-200">
+          <CardTitle className="text-lg">Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 p-6 lg:grid-cols-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              From
+            </label>
+            <input
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              type="date"
+              value={filters.fromDate}
+              onChange={(event) => onFilterChange({ ...filters, fromDate: event.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              To
+            </label>
+            <input
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              type="date"
+              value={filters.toDate}
+              onChange={(event) => onFilterChange({ ...filters, toDate: event.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Task
+            </label>
+            <Select
+              value={filters.taskId}
+              onValueChange={(value) => onFilterChange({ ...filters, taskId: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tasks</SelectItem>
+                {tasks.map((task) => (
+                  <SelectItem key={task.id} value={task.id}>
+                    {task.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Status
+            </label>
+            <Select
+              value={filters.status}
+              onValueChange={(value) => onFilterChange({ ...filters, status: value as Status | 'all' })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status === 'all' ? 'All Statuses' : status.replace('-', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200 bg-white text-slate-900 shadow-sm">
+        <CardHeader className="border-b border-slate-200">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle className="text-lg">Entries</CardTitle>
+            <p className="text-sm text-slate-500">Total hours in view: {totalHours.toFixed(2)}h</p>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {entries.length === 0 ? (
+            <div className="p-10 text-center text-sm text-slate-500">
+              {tasks.length === 0
+                ? 'Create a task first, then log work against it.'
+                : 'No work log entries match the selected filters.'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1120px]">
+                <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.18em] text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Task</th>
+                    <th className="px-6 py-4">Time</th>
+                    <th className="px-6 py-4">Break</th>
+                    <th className="px-6 py-4">Hours</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Progress</th>
+                    <th className="px-6 py-4">Notes</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => {
+                    const task = tasks.find((item) => item.id === entry.taskId);
+                    const totalHoursForEntry = onCalculateHours(
+                      entry.startTime,
+                      entry.endTime,
+                      entry.breakDuration
+                    );
+
+                    return (
+                      <tr key={entry.id} className="border-t border-slate-200 align-top">
+                        <td className="px-6 py-5 text-sm text-slate-600">{formatDateValue(entry.date)}</td>
+                        <td className="px-6 py-5">
+                          <div className="space-y-1">
+                            <p className="font-medium text-slate-900">{task?.title ?? 'Archived task'}</p>
+                            <p className="text-xs text-slate-500">
+                              Updated {new Date(entry.updatedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-sm text-slate-600">
+                          {entry.startTime} - {entry.endTime}
+                        </td>
+                        <td className="px-6 py-5 text-sm text-slate-600">{entry.breakDuration} min</td>
+                        <td className="px-6 py-5 text-sm text-slate-600">
+                          {totalHoursForEntry.toFixed(2)}h
+                        </td>
+                        <td className="px-6 py-5">
+                          <StatusBadge status={entry.statusUpdate} />
+                        </td>
+                        <td className="px-6 py-5 min-w-56">
+                          <ProgressBar progress={entry.progressPercentage} />
+                        </td>
+                        <td className="px-6 py-5 text-sm text-slate-600">
+                          <div className="max-w-xs space-y-2">
+                            {entry.progressNotes ? <p>{entry.progressNotes}</p> : null}
+                            {entry.remarks ? <p className="text-slate-500">{entry.remarks}</p> : null}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setEditingEntry(entry)}>
+                              <PencilLine className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => onDeleteEntry(entry.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <WorkLogFormModal
+        open={isCreateOpen}
+        tasks={activeTasks}
+        onOpenChange={setIsCreateOpen}
+        onSubmit={onAddEntry}
+      />
+
+      <WorkLogFormModal
+        open={!!editingEntry}
+        entry={editingEntry}
+        tasks={tasks}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingEntry(null);
+          }
+        }}
+        onSubmit={(draft) => {
+          if (!editingEntry) {
+            return;
+          }
+
+          onUpdateEntry(editingEntry.id, draft);
+          setEditingEntry(null);
+        }}
+      />
+    </div>
+  );
+}
