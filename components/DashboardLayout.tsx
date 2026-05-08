@@ -45,6 +45,7 @@ interface DashboardLayoutProps {
   onDeleteWorkLogEntry: (id: string) => void;
   calculateTotalHours: (startTime: string, endTime: string, breakDuration: number) => number;
   getOverdueTasks: () => Task[];
+  onLogout: () => void;
 }
 
 type DeleteDialogState =
@@ -77,6 +78,7 @@ export function DashboardLayout({
   onDeleteWorkLogEntry,
   calculateTotalHours,
   getOverdueTasks,
+  onLogout,
 }: DashboardLayoutProps) {
   const today = getLocalDateValue();
   const defaultStartDate = getLocalDateValue(addDays(new Date(), -2));
@@ -247,12 +249,13 @@ export function DashboardLayout({
       : null;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,_#f7f9fc,_#eef3f8)] text-slate-900 lg:flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 lg:flex transition-colors duration-200">
       <SidebarNav
         activeView={activeView}
         onViewChange={setActiveView}
         userProfile={userProfile}
         onUpdateProfile={onUpdateUserProfile}
+        onLogout={onLogout}
       />
 
       <main className="flex-1">
@@ -301,7 +304,7 @@ export function DashboardLayout({
       </main>
 
       <AlertDialog open={deleteDialog.type !== 'none'} onOpenChange={(open) => !open && closeDeleteDialog()}>
-        <AlertDialogContent className="border-slate-200 bg-white">
+        <AlertDialogContent className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {deleteDialog.type === 'task-blocked' && 'Task cannot be deleted'}

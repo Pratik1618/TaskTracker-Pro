@@ -73,7 +73,7 @@ export function SummaryPanel({ summary, rangeLabel }: SummaryPanelProps) {
                 <div>
                   <p className="text-3xl font-semibold text-slate-900">
                     {item.getValue(summary)}
-                    {item.suffix ?? ''}
+                    {'suffix' in item ? item.suffix : ''}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">{rangeLabel}</p>
                 </div>

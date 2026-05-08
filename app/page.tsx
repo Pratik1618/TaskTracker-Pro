@@ -4,8 +4,10 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { useTasks } from '@/lib/hooks/useTasks';
 import { useWorkLog } from '@/lib/hooks/useWorkLog';
 import { useUserProfile } from '@/lib/hooks/useUserProfile';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { getLatestWorkLogEntry } from '@/lib/task-state';
 import { Task, TaskDraft, WorkLogEntryDraft } from '@/lib/types';
+import { LoginScreen } from '@/components/LoginScreen';
 
 export default function Dashboard() {
   const {
@@ -31,6 +33,8 @@ export default function Dashboard() {
     updateProfile,
     isLoaded: profileLoaded,
   } = useUserProfile();
+
+  const { isAuthenticated, isAuthLoaded, login, logout } = useAuth();
 
   const handleAddTask = (draft: TaskDraft) => {
     addTask(draft);
@@ -132,7 +136,7 @@ export default function Dashboard() {
     deleteTask(taskId);
   };
 
-  if (!tasksLoaded || !workLogLoaded || !profileLoaded) {
+  if (!tasksLoaded || !workLogLoaded || !profileLoaded || !isAuthLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900">
         <div className="space-y-4 text-center">
@@ -143,6 +147,10 @@ export default function Dashboard() {
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={login} />;
   }
 
   return (
@@ -159,6 +167,7 @@ export default function Dashboard() {
       onDeleteWorkLogEntry={handleDeleteWorkLogEntry}
       calculateTotalHours={calculateTotalHours}
       getOverdueTasks={getOverdueTasks}
+      onLogout={logout}
     />
   );
 }

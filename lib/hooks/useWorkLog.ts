@@ -64,30 +64,27 @@ export function useWorkLog() {
     []
   );
 
-  const updateEntry = useCallback((id: string, updates: Partial<WorkLogEntryDraft>) => {
+  const updateEntry = useCallback((id: string, updates: Partial<WorkLogEntryDraft>): WorkLogEntry | null => {
     let updatedEntry: WorkLogEntry | null = null;
 
-    setEntries((prev) =>
-      prev.map((entry) => {
-        if (entry.id !== id) {
-          return entry;
-        }
+    setEntries((prev) => {
+      const existingEntry = prev.find((entry) => entry.id === id);
+      if (!existingEntry) return prev;
 
-        updatedEntry = buildWorkLogEntry({
-          taskId: updates.taskId ?? entry.taskId,
-          date: updates.date ?? entry.date,
-          startTime: updates.startTime ?? entry.startTime,
-          endTime: updates.endTime ?? entry.endTime,
-          breakDuration: updates.breakDuration ?? entry.breakDuration,
-          remarks: updates.remarks ?? entry.remarks,
-          progressPercentage: updates.progressPercentage ?? entry.progressPercentage,
-          progressNotes: updates.progressNotes ?? entry.progressNotes,
-          statusUpdate: updates.statusUpdate ?? entry.statusUpdate,
-        }, entry);
+      updatedEntry = buildWorkLogEntry({
+        taskId: updates.taskId ?? existingEntry.taskId,
+        date: updates.date ?? existingEntry.date,
+        startTime: updates.startTime ?? existingEntry.startTime,
+        endTime: updates.endTime ?? existingEntry.endTime,
+        breakDuration: updates.breakDuration ?? existingEntry.breakDuration,
+        remarks: updates.remarks ?? existingEntry.remarks,
+        progressPercentage: updates.progressPercentage ?? existingEntry.progressPercentage,
+        progressNotes: updates.progressNotes ?? existingEntry.progressNotes,
+        statusUpdate: updates.statusUpdate ?? existingEntry.statusUpdate,
+      }, existingEntry);
 
-        return updatedEntry;
-      })
-    );
+      return prev.map((entry) => (entry.id === id ? updatedEntry! : entry));
+    });
 
     return updatedEntry;
   }, []);

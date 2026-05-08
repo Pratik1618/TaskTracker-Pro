@@ -11,9 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 interface UserProfileCardProps {
   profile: UserProfile;
   onUpdateProfile: (updates: Partial<UserProfile>) => void;
+  onLogout?: () => void;
 }
 
-export function UserProfileCard({ profile, onUpdateProfile }: UserProfileCardProps) {
+export function UserProfileCard({ profile, onUpdateProfile, onLogout }: UserProfileCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(profile);
 
@@ -34,51 +35,58 @@ export function UserProfileCard({ profile, onUpdateProfile }: UserProfileCardPro
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-slate-100">
+        <button className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sm font-semibold tracking-[0.18em] text-sky-700">
               {profile.avatar}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-900">{profile.fullName}</p>
-              <p className="truncate text-xs text-slate-500">{profile.jobTitle}</p>
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{profile.fullName}</p>
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{profile.jobTitle}</p>
             </div>
           </div>
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-80 border-slate-200 bg-white text-slate-900">
+      <PopoverContent className="w-80 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50">
         {!isEditing ? (
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <h3 className="font-semibold text-slate-900">{profile.fullName}</h3>
-                <p className="text-sm text-slate-500">{profile.jobTitle}</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-50">{profile.fullName}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{profile.jobTitle}</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="text-slate-500 dark:text-slate-400">
                 <Edit2 className="h-4 w-4" />
               </Button>
             </div>
 
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Email</p>
-                <p className="text-slate-900">{profile.email}</p>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Email</p>
+                <p className="text-slate-900 dark:text-slate-50">{profile.email}</p>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Manager</p>
-                <p className="text-slate-900">{profile.managerName || 'Not set'}</p>
-                <p className="text-xs text-slate-500">{profile.managerEmail || 'No manager email'}</p>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Manager</p>
+                <p className="text-slate-900 dark:text-slate-50">{profile.managerName || 'Not set'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{profile.managerEmail || 'No manager email'}</p>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Department</p>
-                <p className="text-slate-900">{profile.department}</p>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Department</p>
+                <p className="text-slate-900 dark:text-slate-50">{profile.department}</p>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Profile Code</p>
-                <p className="text-slate-900">{profile.avatar}</p>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Profile Code</p>
+                <p className="text-slate-900 dark:text-slate-50">{profile.avatar}</p>
               </div>
             </div>
+            {onLogout && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-4">
+                <Button variant="outline" className="w-full text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 border-slate-200 dark:border-slate-800" onClick={onLogout}>
+                  Log Out
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
