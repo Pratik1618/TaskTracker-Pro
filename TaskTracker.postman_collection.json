@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "TaskTracker API",
+    "_postman_id": "88ae700c-cc97-4f9d-b4ca-e6f311d577b7",
+    "description": "Postman collection for the proposed TaskTracker API contract covering login, dashboard, tasks, work logs, profile, and report generation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "taskId",
+      "value": "seed-task-1"
+    },
+    {
+      "key": "entryId",
+      "value": "seed-entry-1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        },
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/session"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/profile"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Pratik Sharma\",\n  \"jobTitle\": \"Operations Analyst\",\n  \"managerName\": \"Alex Manager\",\n  \"managerEmail\": \"alex.manager@company.com\",\n  \"avatar\": \"PS\"\n}"
+            },
+            "url": "{{baseUrl}}/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/summary?fromDate=2026-05-07&toDate=2026-05-09",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2026-05-07"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2026-05-09"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks?status=all&archived=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "archived",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Prepare weekly report\",\n  \"priority\": \"medium\",\n  \"expectedEndDate\": \"2026-05-12\",\n  \"progress\": 0,\n  \"status\": \"pending\"\n}"
+            },
+            "url": "{{baseUrl}}/tasks"
+          }
+        },
+        {
+          "name": "Get Task",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/tasks/{{taskId}}"
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progress\": 65,\n  \"status\": \"in-progress\",\n  \"archived\": false\n}"
+            },
+            "url": "{{baseUrl}}/tasks/{{taskId}}"
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/tasks/{{taskId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Work Logs",
+      "item": [
+        {
+          "name": "List Work Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/work-logs?fromDate=2026-05-07&toDate=2026-05-09&taskId=all&status=all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "work-logs"
+              ],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2026-05-07"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2026-05-09"
+                },
+                {
+                  "key": "taskId",
+                  "value": "all"
+                },
+                {
+                  "key": "status",
+                  "value": "all"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Work Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": \"{{taskId}}\",\n  \"date\": \"2026-05-09\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"11:30\",\n  \"breakDuration\": 15,\n  \"remarks\": \"Completed validation pass\",\n  \"progressPercentage\": 65,\n  \"progressNotes\": \"Validated pending records and escalated exceptions.\",\n  \"statusUpdate\": \"in-progress\"\n}"
+            },
+            "url": "{{baseUrl}}/work-logs"
+          }
+        },
+        {
+          "name": "Get Work Log",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/work-logs/{{entryId}}"
+          }
+        },
+        {
+          "name": "Update Work Log",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progressPercentage\": 80,\n  \"statusUpdate\": \"in-progress\",\n  \"progressNotes\": \"Completed review and prepared closure notes.\"\n}"
+            },
+            "url": "{{baseUrl}}/work-logs/{{entryId}}"
+          }
+        },
+        {
+          "name": "Delete Work Log",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/work-logs/{{entryId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Generate Work Log Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"2026-05-07\",\n  \"toDate\": \"2026-05-09\",\n  \"taskId\": \"all\",\n  \"status\": \"all\",\n  \"recipient\": \"alex.manager@company.com\",\n  \"cc\": []\n}"
+            },
+            "url": "{{baseUrl}}/reports/work-log-email"
+          }
+        }
+      ]
+    }
+  ]
+}

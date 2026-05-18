@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { PencilLine, Plus, Trash2, Mail } from 'lucide-react';
+import { ChangeEvent, useMemo, useRef, useState } from 'react';
+import { FileSpreadsheet, Mail, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { formatDateValue } from '@/lib/date';
+import { parseWorkLogImportRows } from '@/lib/worklog-import';
 import { Status, Task, UserProfile, WorkLogEntry, WorkLogEntryDraft, WorkLogFilter } from '@/lib/types';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -19,6 +21,7 @@ interface WorkLogScreenProps {
   totalHours: number;
   onFilterChange: (filters: WorkLogFilter) => void;
   onAddEntry: (draft: WorkLogEntryDraft) => void;
+  onImportEntries: (drafts: WorkLogEntryDraft[]) => void;
   onUpdateEntry: (id: string, updates: Partial<WorkLogEntryDraft>) => void;
   onDeleteEntry: (id: string) => void;
   onCalculateHours: (startTime: string, endTime: string, breakDuration: number) => number;
@@ -32,6 +35,7 @@ export function WorkLogScreen({
   totalHours,
   onFilterChange,
   onAddEntry,
+  onImportEntries,
   onUpdateEntry,
   onDeleteEntry,
   onCalculateHours,
@@ -39,6 +43,8 @@ export function WorkLogScreen({
 }: WorkLogScreenProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WorkLogEntry | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archived), [tasks]);
 
@@ -86,6 +92,69 @@ export function WorkLogScreen({
     'cancelled',
   ];
 
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    if (tasks.length === 0) {
+      toast.error('Create at least one task before importing work logs.');
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+
+      if (!firstSheet) {
+        toast.error('The selected file does not contain a readable worksheet.');
+        return;
+      }
+
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, {
+        defval: '',
+      });
+
+      if (rows.length === 0) {
+        toast.error('The selected file is empty.');
+        return;
+      }
+
+      const { drafts, errors } = parseWorkLogImportRows(rows, tasks);
+
+      if (drafts.length > 0) {
+        onImportEntries(drafts);
+      }
+
+      if (drafts.length > 0 && errors.length === 0) {
+        toast.success(`Imported ${drafts.length} work log entr${drafts.length === 1 ? 'y' : 'ies'}.`);
+        return;
+      }
+
+      if (drafts.length > 0) {
+        toast.warning(
+          `Imported ${drafts.length} entr${drafts.length === 1 ? 'y' : 'ies'}. ${errors.length} row${errors.length === 1 ? '' : 's'} were skipped.`
+        );
+        return;
+      }
+
+      toast.error(errors[0] ?? 'No valid work log rows were found in the file.');
+    } catch (error) {
+      console.error('Failed to import work log file:', error);
+      toast.error('The file could not be imported. Check the Excel format and try again.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -101,11 +170,20 @@ export function WorkLogScreen({
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 self-start xl:self-auto">
+        <div className="flex flex-col gap-2 self-start xl:items-end xl:self-auto">
           <div className="flex gap-2">
             <Button className="gap-2" disabled={activeTasks.length === 0} onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4" />
               Add Entry
+            </Button>
+            <Button
+              className="gap-2"
+              variant="outline"
+              disabled={tasks.length === 0 || isImporting}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {isImporting ? 'Importing...' : 'Upload Excel'}
             </Button>
             <Button
               className="gap-2"
@@ -122,6 +200,16 @@ export function WorkLogScreen({
               Set a manager email in your profile so this button can auto-fill the recipient.
             </p>
           ) : null}
+            <p className="max-w-[44rem] text-xs text-slate-500 xl:text-right">
+              Excel import supports headers like Task or Task ID, Date, Start Time, End Time, Break, Progress, Status, Progress Notes, and Remarks.
+            </p>
+          <input
+            ref={fileInputRef}
+            hidden
+            accept=".xlsx,.xls,.csv"
+            type="file"
+            onChange={handleImportFile}
+          />
         </div>
       </div>
 

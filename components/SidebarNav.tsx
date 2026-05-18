@@ -67,17 +67,6 @@ export function SidebarNav({
         })}
       </nav>
 
-      <div className="mt-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 lg:mt-auto transition-colors duration-200">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          Local Business Date
-        </p>
-        <p className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-50">
-          {formatDateValue(getLocalDateValue(), 'EEEE, MMMM dd, yyyy')}
-        </p>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Date-sensitive totals and filters use local date values instead of UTC ISO splits.
-        </p>
-      </div>
     </aside>
   );
 }

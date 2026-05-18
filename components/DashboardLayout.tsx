@@ -38,9 +38,11 @@ interface DashboardLayoutProps {
   userProfile: UserProfile;
   onUpdateUserProfile: (updates: Partial<UserProfile>) => void;
   onAddTask: (draft: TaskDraft) => void;
+  onImportTasks: (drafts: TaskDraft[]) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onAddWorkLogEntry: (draft: WorkLogEntryDraft) => void;
+  onImportWorkLogEntries: (drafts: WorkLogEntryDraft[]) => void;
   onUpdateWorkLogEntry: (id: string, updates: Partial<WorkLogEntryDraft>) => void;
   onDeleteWorkLogEntry: (id: string) => void;
   calculateTotalHours: (startTime: string, endTime: string, breakDuration: number) => number;
@@ -71,9 +73,11 @@ export function DashboardLayout({
   userProfile,
   onUpdateUserProfile,
   onAddTask,
+  onImportTasks,
   onUpdateTask,
   onDeleteTask,
   onAddWorkLogEntry,
+  onImportWorkLogEntries,
   onUpdateWorkLogEntry,
   onDeleteWorkLogEntry,
   calculateTotalHours,
@@ -279,6 +283,7 @@ export function DashboardLayout({
               overdueTaskIds={overdueTaskIds}
               onFilterChange={setTaskFilter}
               onAddTask={onAddTask}
+              onImportTasks={onImportTasks}
               onUpdateTask={onUpdateTask}
               onArchiveTask={handleArchiveTask}
               onDeleteTask={handleDeleteTask}
@@ -294,6 +299,7 @@ export function DashboardLayout({
               totalHours={filteredWorkLogTotal}
               onFilterChange={(filters) => setWorkLogFilter(normalizeDateRange(filters))}
               onAddEntry={onAddWorkLogEntry}
+              onImportEntries={onImportWorkLogEntries}
               onUpdateEntry={onUpdateWorkLogEntry}
               onDeleteEntry={handleDeleteEntry}
               onCalculateHours={calculateTotalHours}

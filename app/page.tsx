@@ -40,6 +40,12 @@ export default function Dashboard() {
     addTask(draft);
   };
 
+  const handleImportTasks = (drafts: TaskDraft[]) => {
+    drafts.forEach((draft) => {
+      addTask(draft);
+    });
+  };
+
   const handleUpdateTask = (id: string, updates: Partial<Task>) => {
     updateTask(id, updates, 'task');
   };
@@ -94,6 +100,27 @@ export default function Dashboard() {
       },
       'worklog'
     );
+  };
+
+  const handleImportWorkLogEntries = (drafts: WorkLogEntryDraft[]) => {
+    const sortedDrafts = [...drafts].sort((left, right) => {
+      const leftKey = `${left.date}-${left.startTime}`;
+      const rightKey = `${right.date}-${right.startTime}`;
+      return leftKey.localeCompare(rightKey);
+    });
+
+    sortedDrafts.forEach((draft) => {
+      const entry = addEntry(draft);
+      updateTask(
+        draft.taskId,
+        {
+          progress: entry.progressPercentage,
+          status: entry.statusUpdate,
+          lastSyncedEntryId: entry.id,
+        },
+        'worklog'
+      );
+    });
   };
 
   const handleUpdateWorkLogEntry = (id: string, updates: Partial<WorkLogEntryDraft>) => {
@@ -160,9 +187,11 @@ export default function Dashboard() {
       userProfile={userProfile}
       onUpdateUserProfile={updateProfile}
       onAddTask={handleAddTask}
+      onImportTasks={handleImportTasks}
       onUpdateTask={handleUpdateTask}
       onDeleteTask={handleDeleteTask}
       onAddWorkLogEntry={handleAddWorkLogEntry}
+      onImportWorkLogEntries={handleImportWorkLogEntries}
       onUpdateWorkLogEntry={handleUpdateWorkLogEntry}
       onDeleteWorkLogEntry={handleDeleteWorkLogEntry}
       calculateTotalHours={calculateTotalHours}

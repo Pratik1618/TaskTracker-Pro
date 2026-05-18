@@ -1,0 +1,807 @@
+openapi: 3.1.0
+info:
+  title: TaskTracker API
+  version: 1.0.0
+  summary: Proposed API contract for all current TaskTracker screens
+  description: |
+    This OpenAPI document defines the planned HTTP API for TaskTracker's current UI flows.
+    The app is still frontend-only today, so this spec is intended for documentation,
+    backend planning, and Postman testing setup.
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+tags:
+  - name: Auth
+  - name: Profile
+  - name: Dashboard
+  - name: Tasks
+  - name: Work Logs
+  - name: Reports
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in to the workspace
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out from the workspace
+      operationId: logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+  /auth/session:
+    get:
+      tags: [Auth]
+      summary: Get current session
+      operationId: getSession
+      responses:
+        '200':
+          description: Current session state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+  /profile:
+    get:
+      tags: [Profile]
+      summary: Get current user profile
+      operationId: getProfile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    patch:
+      tags: [Profile]
+      summary: Update current user profile
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /dashboard/summary:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard summary for a date range
+      operationId: getDashboardSummary
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Summary metrics, overdue tasks, and recent activity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks
+      operationId: listTasks
+      parameters:
+        - $ref: '#/components/parameters/TaskStatus'
+        - $ref: '#/components/parameters/Archived'
+        - $ref: '#/components/parameters/Overdue'
+      responses:
+        '200':
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+    post:
+      tags: [Tasks]
+      summary: Create a task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskDraft'
+      responses:
+        '201':
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /tasks/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags: [Tasks]
+      summary: Get a task by ID
+      operationId: getTask
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Tasks]
+      summary: Update a task
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Tasks]
+      summary: Delete a task
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Task has linked work log history and should be archived instead
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /work-logs:
+    get:
+      tags: [Work Logs]
+      summary: List work log entries
+      operationId: listWorkLogs
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/TaskIdQuery'
+        - $ref: '#/components/parameters/WorkLogStatus'
+      responses:
+        '200':
+          description: Work log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkLogEntry'
+    post:
+      tags: [Work Logs]
+      summary: Create a work log entry
+      operationId: createWorkLog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkLogEntryDraft'
+      responses:
+        '201':
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkLogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /work-logs/{entryId}:
+    parameters:
+      - $ref: '#/components/parameters/EntryId'
+    get:
+      tags: [Work Logs]
+      summary: Get a work log entry by ID
+      operationId: getWorkLog
+      responses:
+        '200':
+          description: Work log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkLogEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Work Logs]
+      summary: Update a work log entry
+      operationId: updateWorkLog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkLogEntryUpdate'
+      responses:
+        '200':
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkLogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Work Logs]
+      summary: Delete a work log entry
+      operationId: deleteWorkLog
+      responses:
+        '204':
+          description: Entry deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /reports/work-log-email:
+    post:
+      tags: [Reports]
+      summary: Generate a work log email payload
+      operationId: generateWorkLogEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkLogEmailRequest'
+      responses:
+        '200':
+          description: Generated subject, body, and mailto URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkLogEmailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    FromDate:
+      name: fromDate
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      example: 2026-05-07
+    ToDate:
+      name: toDate
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      example: 2026-05-09
+    TaskStatus:
+      name: status
+      in: query
+      required: false
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/Status'
+          - type: string
+            enum: [all]
+    WorkLogStatus:
+      name: status
+      in: query
+      required: false
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/Status'
+          - type: string
+            enum: [all]
+    Archived:
+      name: archived
+      in: query
+      required: false
+      schema:
+        type: boolean
+    Overdue:
+      name: overdue
+      in: query
+      required: false
+      schema:
+        type: boolean
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+    EntryId:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        type: string
+    TaskIdQuery:
+      name: taskId
+      in: query
+      required: false
+      schema:
+        type: string
+      example: seed-task-1
+  responses:
+    BadRequest:
+      description: Invalid request payload or query parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Priority:
+      type: string
+      enum: [normal, medium, critical]
+    Status:
+      type: string
+      enum: [pending, in-progress, on-hold, completed, cancelled]
+    TaskUpdateSource:
+      type: string
+      enum: [task, worklog]
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@company.com
+        password:
+          type: string
+          example: password123
+    SessionResponse:
+      type: object
+      required: [isAuthenticated, isAuthLoaded]
+      properties:
+        isAuthenticated:
+          type: boolean
+          example: true
+        isAuthLoaded:
+          type: boolean
+          example: true
+        token:
+          type: string
+          nullable: true
+          example: mock-session-token
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: admin@company.com
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+    UserProfile:
+      type: object
+      required: [id, fullName, email, jobTitle, department, avatar, managerName, managerEmail]
+      properties:
+        id:
+          type: string
+          example: '1'
+        fullName:
+          type: string
+          example: Team Member
+        email:
+          type: string
+          format: email
+          example: team.member@company.com
+        jobTitle:
+          type: string
+          example: Operations Associate
+        department:
+          type: string
+          example: Operations
+        avatar:
+          type: string
+          example: TM
+        managerName:
+          type: string
+          example: Alex Manager
+        managerEmail:
+          type: string
+          format: email
+          example: alex.manager@company.com
+    UserProfileUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        jobTitle:
+          type: string
+        department:
+          type: string
+        avatar:
+          type: string
+          maxLength: 3
+        managerName:
+          type: string
+        managerEmail:
+          type: string
+          format: email
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - priority
+        - expectedEndDate
+        - progress
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: seed-task-1
+        title:
+          type: string
+          example: Review pending approvals
+        priority:
+          $ref: '#/components/schemas/Priority'
+        expectedEndDate:
+          type: string
+          format: date
+          example: 2026-05-09
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 65
+        status:
+          $ref: '#/components/schemas/Status'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        archived:
+          type: boolean
+          example: false
+        lastUpdatedSource:
+          $ref: '#/components/schemas/TaskUpdateSource'
+        lastSyncedEntryId:
+          type: string
+          nullable: true
+    TaskDraft:
+      type: object
+      required: [title, priority, expectedEndDate, progress, status]
+      properties:
+        title:
+          type: string
+        priority:
+          $ref: '#/components/schemas/Priority'
+        expectedEndDate:
+          type: string
+          format: date
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        status:
+          $ref: '#/components/schemas/Status'
+    TaskUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+        priority:
+          $ref: '#/components/schemas/Priority'
+        expectedEndDate:
+          type: string
+          format: date
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        status:
+          $ref: '#/components/schemas/Status'
+        archived:
+          type: boolean
+        lastUpdatedSource:
+          $ref: '#/components/schemas/TaskUpdateSource'
+        lastSyncedEntryId:
+          type: string
+          nullable: true
+    WorkLogEntry:
+      type: object
+      required:
+        - id
+        - taskId
+        - startTime
+        - endTime
+        - breakDuration
+        - remarks
+        - progressPercentage
+        - progressNotes
+        - statusUpdate
+        - date
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: seed-entry-1
+        taskId:
+          type: string
+          example: seed-task-1
+        startTime:
+          type: string
+          example: 09:00
+        endTime:
+          type: string
+          example: 11:00
+        breakDuration:
+          type: integer
+          minimum: 0
+          example: 15
+        remarks:
+          type: string
+        progressPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+        progressNotes:
+          type: string
+        statusUpdate:
+          $ref: '#/components/schemas/Status'
+        date:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    WorkLogEntryDraft:
+      type: object
+      required:
+        - taskId
+        - date
+        - startTime
+        - endTime
+        - breakDuration
+        - remarks
+        - progressPercentage
+        - progressNotes
+        - statusUpdate
+      properties:
+        taskId:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          example: 09:00
+        endTime:
+          type: string
+          example: 11:00
+        breakDuration:
+          type: integer
+          minimum: 0
+        remarks:
+          type: string
+        progressPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+        progressNotes:
+          type: string
+        statusUpdate:
+          $ref: '#/components/schemas/Status'
+    WorkLogEntryUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        taskId:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        breakDuration:
+          type: integer
+          minimum: 0
+        remarks:
+          type: string
+        progressPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+        progressNotes:
+          type: string
+        statusUpdate:
+          $ref: '#/components/schemas/Status'
+    StatusSummary:
+      type: object
+      required: [pending, in-progress, on-hold, completed, cancelled]
+      properties:
+        pending:
+          type: integer
+          example: 2
+        in-progress:
+          type: integer
+          example: 3
+        on-hold:
+          type: integer
+          example: 1
+        completed:
+          type: integer
+          example: 4
+        cancelled:
+          type: integer
+          example: 0
+    DashboardSummary:
+      type: object
+      required: [totalHours, taskCount, activeTaskCount, overdueCount, statusSummary]
+      properties:
+        totalHours:
+          type: number
+          example: 7.75
+        taskCount:
+          type: integer
+          example: 3
+        activeTaskCount:
+          type: integer
+          example: 2
+        overdueCount:
+          type: integer
+          example: 1
+        statusSummary:
+          $ref: '#/components/schemas/StatusSummary'
+    DateRange:
+      type: object
+      required: [fromDate, toDate]
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+    DashboardSummaryResponse:
+      type: object
+      required: [range, summary, overdueTasks, recentEntries]
+      properties:
+        range:
+          $ref: '#/components/schemas/DateRange'
+        summary:
+          $ref: '#/components/schemas/DashboardSummary'
+        overdueTasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        recentEntries:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkLogEntry'
+    WorkLogEmailRequest:
+      type: object
+      required: [fromDate, toDate, taskId, status]
+      properties:
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+        taskId:
+          type: string
+          example: all
+        status:
+          oneOf:
+            - $ref: '#/components/schemas/Status'
+            - type: string
+              enum: [all]
+        recipient:
+          type: string
+          format: email
+        cc:
+          type: array
+          items:
+            type: string
+            format: email
+    WorkLogEmailResponse:
+      type: object
+      required: [subject, body, mailto, totalHours, entryCount]
+      properties:
+        subject:
+          type: string
+          example: Work Log Report
+        body:
+          type: string
+        mailto:
+          type: string
+        recipient:
+          type: string
+          format: email
+        cc:
+          type: array
+          items:
+            type: string
+            format: email
+        totalHours:
+          type: number
+          example: 7.75
+        entryCount:
+          type: integer
+          example: 4
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Resource not found

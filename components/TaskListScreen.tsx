@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Archive, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { ChangeEvent, useMemo, useRef, useState } from 'react';
+import { Archive, FileSpreadsheet, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { formatDateValue } from '@/lib/date';
+import { parseTaskImportRows } from '@/lib/task-import';
 import { Task, TaskDraft, TaskFilter } from '@/lib/types';
 import { ProgressBar } from '@/components/ProgressBar';
 import { PriorityBadge } from '@/components/PriorityBadge';
@@ -18,6 +20,7 @@ interface TaskListScreenProps {
   overdueTaskIds: Set<string>;
   onFilterChange: (filter: TaskFilter) => void;
   onAddTask: (draft: TaskDraft) => void;
+  onImportTasks: (drafts: TaskDraft[]) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onArchiveTask: (id: string, archived: boolean) => void;
   onDeleteTask: (id: string) => void;
@@ -42,6 +45,7 @@ export function TaskListScreen({
   overdueTaskIds,
   onFilterChange,
   onAddTask,
+  onImportTasks,
   onUpdateTask,
   onArchiveTask,
   onDeleteTask,
@@ -49,6 +53,8 @@ export function TaskListScreen({
 }: TaskListScreenProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const emptyStateText = useMemo(() => {
     if (currentFilter === 'archived') {
@@ -58,6 +64,64 @@ export function TaskListScreen({
     return 'No tasks match the current filter.';
   }, [currentFilter]);
 
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+
+      if (!firstSheet) {
+        toast.error('The selected file does not contain a readable worksheet.');
+        return;
+      }
+
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, {
+        defval: '',
+      });
+
+      if (rows.length === 0) {
+        toast.error('The selected file is empty.');
+        return;
+      }
+
+      const { drafts, errors } = parseTaskImportRows(rows);
+
+      if (drafts.length > 0) {
+        onImportTasks(drafts);
+      }
+
+      if (drafts.length > 0 && errors.length === 0) {
+        toast.success(`Imported ${drafts.length} task${drafts.length === 1 ? '' : 's'}.`);
+        return;
+      }
+
+      if (drafts.length > 0) {
+        toast.warning(
+          `Imported ${drafts.length} task${drafts.length === 1 ? '' : 's'}. ${errors.length} row${errors.length === 1 ? '' : 's'} were skipped.`
+        );
+        return;
+      }
+
+      toast.error(errors[0] ?? 'No valid task rows were found in the file.');
+    } catch (error) {
+      console.error('Failed to import task file:', error);
+      toast.error('The file could not be imported. Check the Excel format and try again.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -66,17 +130,40 @@ export function TaskListScreen({
             Task Registry
           </p>
           <h2 className="text-3xl font-semibold tracking-tight text-slate-900">
-            Keep task state explicit before backend workflows arrive
+            Keep task state explicit for reliable tracking
           </h2>
           <p className="max-w-2xl text-sm text-slate-600">
             Track deadlines, progress, and archive state without letting work-log history orphan tasks.
           </p>
         </div>
 
-        <Button className="gap-2 self-start xl:self-auto" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Add Task
-        </Button>
+        <div className="flex flex-col gap-2 self-start xl:items-end xl:self-auto">
+          <div className="flex gap-2">
+            <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add Task
+            </Button>
+            <Button
+              className="gap-2"
+              variant="outline"
+              disabled={isImporting}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {isImporting ? 'Importing...' : 'Upload Excel'}
+            </Button>
+          </div>
+          <p className="max-w-[40rem] text-xs text-slate-500 xl:text-right">
+            Task import supports headers like Task or Task Title, Priority, Expected End Date, Progress, and Status.
+          </p>
+          <input
+            ref={fileInputRef}
+            hidden
+            accept=".xlsx,.xls,.csv"
+            type="file"
+            onChange={handleImportFile}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
